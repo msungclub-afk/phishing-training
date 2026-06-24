@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>악성메일 대응 훈련 - 관리자</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','Segoe UI',sans-serif;background:#f0f2f5;color:#333}
+.header{background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:24px 32px;display:flex;align-items:center;gap:16px}
+.header h1{font-size:22px;font-weight:600}
+.header .badge{background:rgba(255,255,255,.2);padding:4px 12px;border-radius:12px;font-size:13px}
+.container{max-width:1280px;margin:0 auto;padding:24px}
+.tabs{display:flex;gap:4px;margin-bottom:24px;background:#fff;border-radius:8px;padding:4px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tab{padding:10px 24px;border:none;background:none;cursor:pointer;border-radius:6px;font-size:14px;font-weight:500;color:#666;transition:.2s}
+.tab.active{background:#1a237e;color:#fff}
+.tab:hover:not(.active){background:#e8eaf6}
+.panel{display:none}.panel.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center}
+.stat-card .number{font-size:36px;font-weight:700;margin:8px 0 4px}
+.stat-card .label{font-size:13px;color:#888}
+.stat-card.red .number{color:#e74c3c}
+.stat-card.orange .number{color:#f39c12}
+.stat-card.blue .number{color:#2980b9}
+.stat-card.green .number{color:#27ae60}
+.stat-card.purple .number{color:#8e44ad}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:20px;margin-bottom:24px}
+.card h2{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8f9fa;padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid #e9ecef;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
+tr:hover td{background:#f8f9fb}
+.badge-click{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600}
+.badge-yes{background:#fde8e8;color:#e74c3c}
+.badge-no{background:#e8f5e9;color:#27ae60}
+.link-url{font-size:12px;color:#666;word-break:break-all;background:#f5f5f5;padding:4px 8px;border-radius:4px;display:inline-block;margin:2px 0;cursor:pointer;user-select:all}
+.form-section{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;font-weight:600;color:#666}
+.form-group input,.form-group textarea,.form-group select{padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;font-family:inherit}
+.form-group textarea{min-height:120px;width:400px}
+.btn{padding:8px 20px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;transition:.2s}
+.btn-primary{background:#1a237e;color:#fff}.btn-primary:hover{background:#283593}
+.btn-danger{background:#e74c3c;color:#fff}.btn-danger:hover{background:#c0392b}
+.btn-success{background:#27ae60;color:#fff}.btn-success:hover{background:#219a52}
+.btn-sm{padding:4px 12px;font-size:12px}
+.btn-outline{background:none;border:1px solid #ddd;color:#666}.btn-outline:hover{background:#f5f5f5}
+.dept-bar{display:flex;align-items:center;gap:8px;margin:8px 0}
+.dept-name{width:80px;text-align:right;font-size:13px;font-weight:500;flex-shrink:0}
+.bar-container{flex:1;height:28px;background:#f0f0f0;border-radius:4px;position:relative;overflow:hidden}
+.bar{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:11px;color:#fff;font-weight:600;transition:width .5s}
+.bar.link1{background:#e74c3c}
+.bar.link2{background:#f39c12}
+.bar-pct{font-size:12px;color:#888;width:50px;text-align:right;flex-shrink:0}
+.actions{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.info-box{background:#e3f2fd;border-left:4px solid #1a237e;padding:12px 16px;border-radius:4px;margin-bottom:20px;font-size:13px;line-height:1.7}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>&#128737; 악성메일 대응 훈련 관리 시스템</h1>
+  <span class="badge">침해사고 대응훈련</span>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" data-panel="dashboard">&#128202; 대시보드</button>
+    <button class="tab" data-panel="participants">&#128100; 참가자 관리</button>
+    <button class="tab" data-panel="links">&#128279; 훈련 링크</button>
+    <button class="tab" data-panel="logs">&#128203; 클릭 로그</button>
+    <button class="tab" data-panel="settings">&#9881; 설정</button>
+  </div>
+
+  <!-- 대시보드 -->
+  <div id="dashboard" class="panel active">
+    <div class="stats-grid">
+      <div class="stat-card blue"><div class="label">전체 대상자</div><div class="number" id="s-total">0</div></div>
+      <div class="stat-card red"><div class="label">링크1 클릭자</div><div class="number" id="s-link1">0</div></div>
+      <div class="stat-card orange"><div class="label">링크2 클릭자</div><div class="number" id="s-link2">0</div></div>
+      <div class="stat-card purple"><div class="label">모두 클릭</div><div class="number" id="s-both">0</div></div>
+      <div class="stat-card green"><div class="label">미클릭 (안전)</div><div class="number" id="s-none">0</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <h2>&#128200; 클릭률</h2>
+        <div style="display:flex;gap:24px;justify-content:center;padding:20px 0">
+          <div style="text-align:center">
+            <div style="font-size:48px;font-weight:700;color:#e74c3c" id="rate-link1">0%</div>
+            <div style="font-size:13px;color:#888">링크1 클릭률</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:48px;font-weight:700;color:#f39c12" id="rate-link2">0%</div>
+            <div style="font-size:13px;color:#888">링크2 클릭률</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>&#127970; 부서별 클릭 현황</h2>
+        <div id="dept-chart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 참가자 관리 -->
+  <div id="participants" class="panel">
+    <div class="card">
+      <h2>&#10133; 참가자 등록 (개별)</h2>
+      <div class="form-section">
+        <div class="form-group"><label>이름</label><input id="f-name" placeholder="홍길동"></div>
+        <div class="form-group"><label>이메일</label><input id="f-email" placeholder="hong@hospital.co.kr"></div>
+        <div class="form-group"><label>부서</label><input id="f-dept" placeholder="정보보안팀"></div>
+        <button class="btn btn-primary" onclick="addOne()">등록</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>&#128203; 일괄 등록 (CSV)</h2>
+      <p style="font-size:13px;color:#888;margin-bottom:8px">형식: 이름,이메일,부서 (한 줄에 한 명)</p>
+      <div class="form-section">
+        <div class="form-group">
+          <textarea id="f-csv" placeholder="홍길동,hong@hospital.co.kr,내과&#10;김영희,kim@hospital.co.kr,외과"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="addBulk()">일괄 등록</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>&#128101; 참가자 목록</h2>
+      <div class="actions">
+        <button class="btn btn-success" onclick="exportCSV()">&#128229; CSV 내보내기</button>
+        <button class="btn btn-danger" onclick="clearAll()">&#128465; 전체 초기화</button>
+      </div>
+      <table>
+        <thead><tr><th>이름</th><th>이메일</th><th>부서</th><th>링크1</th><th>링크2</th><th>관리</th></tr></thead>
+        <tbody id="t-participants"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 훈련 링크 -->
+  <div id="links" class="panel">
+    <div class="info-box">
+      <strong>&#128161; 사용 방법</strong><br>
+      1. 아래 <strong>서버 주소</strong>를 실제 이 파일이 호스팅되는 주소로 변경하세요.<br>
+      2. 각 참가자의 <strong>링크1, 링크2</strong>를 훈련 메일에 삽입하세요.<br>
+      3. 참가자가 링크를 클릭하면 자동으로 클릭이 기록되고 훈련 안내 페이지가 표시됩니다.<br>
+      4. <code>link.html</code> 파일을 같은 경로에 배포해야 링크 추적이 동작합니다.
+    </div>
+    <div class="card">
+      <h2>&#128279; 참가자별 훈련 링크</h2>
+      <div class="form-section">
+        <div class="form-group"><label>서버 주소 (link.html 위치)</label><input id="f-base" value="" style="width:400px" placeholder="https://your-server.com/phishing-training"></div>
+        <button class="btn btn-outline" onclick="renderLinks()">적용</button>
+        <button class="btn btn-outline" onclick="copyAllLinks()">&#128203; 전체 링크 복사</button>
+      </div>
+      <table>
+        <thead><tr><th>이름</th><th>부서</th><th>링크1 URL</th><th>링크2 URL</th></tr></thead>
+        <tbody id="t-links"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 클릭 로그 -->
+  <div id="logs" class="panel">
+    <div class="card">
+      <h2>&#128203; 전체 클릭 로그</h2>
+      <div class="actions">
+        <button class="btn btn-outline" onclick="render()">&#128260; 새로고침</button>
+      </div>
+      <table>
+        <thead><tr><th>시간</th><th>이름</th><th>이메일</th><th>부서</th><th>링크</th></tr></thead>
+        <tbody id="t-logs"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 설정 -->
+  <div id="settings" class="panel">
+    <div class="card">
+      <h2>&#128190; 데이터 백업/복원</h2>
+      <p style="font-size:13px;color:#888;margin-bottom:16px">모든 데이터는 브라우저 localStorage에 저장됩니다. 백업 파일로 내보내거나 복원할 수 있습니다.</p>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="backupData()">&#128229; 데이터 백업 (JSON)</button>
+        <button class="btn btn-outline" onclick="document.getElementById('restore-file').click()">&#128228; 데이터 복원</button>
+        <input type="file" id="restore-file" accept=".json" style="display:none" onchange="restoreData(event)">
+      </div>
+    </div>
+    <div class="card">
+      <h2>&#128214; 링크1 / 링크2 설명</h2>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">각 링크의 용도를 설정하세요 (예: 링크1=본문 내 URL, 링크2=첨부파일 다운로드)</p>
+      <div class="form-section">
+        <div class="form-group"><label>링크1 설명</label><input id="f-link1-desc" placeholder="본문 내 URL 클릭" style="width:250px"></div>
+        <div class="form-group"><label>링크2 설명</label><input id="f-link2-desc" placeholder="첨부파일 다운로드 클릭" style="width:250px"></div>
+        <button class="btn btn-primary" onclick="saveLinkDesc()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+// ── 데이터 저장소 (localStorage) ──
+function getData() {
+  return JSON.parse(localStorage.getItem('pt_data') || '{"participants":[],"clicks":[]}');
+}
+function setData(d) {
+  localStorage.setItem('pt_data', JSON.stringify(d));
+}
+function genToken() {
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+}
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── 탭 ──
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.panel).classList.add('active');
+  };
+});
+
+// ── 참가자 등록 ──
+function addOne() {
+  const name = $('#f-name').value.trim(), email = $('#f-email').value.trim(), dept = $('#f-dept').value.trim();
+  if (!name || !email) return toast('이름과 이메일을 입력하세요');
+  const d = getData();
+  d.participants.push({ id: genId(), name, email, department: dept, token: genToken(), created: new Date().toISOString() });
+  setData(d);
+  $('#f-name').value = ''; $('#f-email').value = ''; $('#f-dept').value = '';
+  toast('등록 완료'); render();
+}
+
+function addBulk() {
+  const csv = $('#f-csv').value.trim();
+  if (!csv) return toast('CSV 데이터를 입력하세요');
+  const d = getData();
+  let count = 0;
+  csv.split('\n').filter(l => l.trim()).forEach(line => {
+    const [name, email, department] = line.split(',').map(s => s.trim());
+    if (!name || !email) return;
+    d.participants.push({ id: genId(), name, email, department: department || '', token: genToken(), created: new Date().toISOString() });
+    count++;
+  });
+  setData(d);
+  $('#f-csv').value = '';
+  toast(count + '명 등록 완료'); render();
+}
+
+function delP(id) {
+  if (!confirm('이 참가자를 삭제하시겠습니까? 관련 클릭 기록도 삭제됩니다.')) return;
+  const d = getData();
+  d.participants = d.participants.filter(p => p.id !== id);
+  d.clicks = d.clicks.filter(c => c.participantId !== id);
+  setData(d); toast('삭제 완료'); render();
+}
+
+// ── 수동 클릭 기록 (테스트/관리용) ──
+function recordClick(participantId, linkNum) {
+  const d = getData();
+  d.clicks.push({ participantId, linkNumber: linkNum, time: new Date().toISOString() });
+  setData(d); toast('클릭 기록 추가'); render();
+}
+
+// ── 렌더링 ──
+function render() {
+  const d = getData();
+  const p = d.participants;
+  const c = d.clicks;
+
+  // 클릭 카운트 계산
+  const clickMap = {};
+  p.forEach(pp => { clickMap[pp.id] = { l1: 0, l2: 0 }; });
+  c.forEach(cc => {
+    if (clickMap[cc.participantId]) {
+      if (cc.linkNumber === 1) clickMap[cc.participantId].l1++;
+      if (cc.linkNumber === 2) clickMap[cc.participantId].l2++;
+    }
+  });
+
+  // 통계
+  const total = p.length;
+  const l1Set = new Set(c.filter(x => x.linkNumber === 1).map(x => x.participantId));
+  const l2Set = new Set(c.filter(x => x.linkNumber === 2).map(x => x.participantId));
+  const bothSet = new Set([...l1Set].filter(x => l2Set.has(x)));
+  const anySet = new Set([...l1Set, ...l2Set]);
+  const noneCount = total - anySet.size;
+
+  $('#s-total').textContent = total;
+  $('#s-link1').textContent = l1Set.size;
+  $('#s-link2').textContent = l2Set.size;
+  $('#s-both').textContent = bothSet.size;
+  $('#s-none').textContent = noneCount;
+  $('#rate-link1').textContent = total ? Math.round(l1Set.size / total * 100) + '%' : '0%';
+  $('#rate-link2').textContent = total ? Math.round(l2Set.size / total * 100) + '%' : '0%';
+
+  // 부서별
+  const depts = {};
+  p.forEach(pp => {
+    const dept = pp.department || '(미지정)';
+    if (!depts[dept]) depts[dept] = { total: 0, l1: 0, l2: 0 };
+    depts[dept].total++;
+    if (l1Set.has(pp.id)) depts[dept].l1++;
+    if (l2Set.has(pp.id)) depts[dept].l2++;
+  });
+  let deptHtml = '';
+  for (const [name, v] of Object.entries(depts)) {
+    const pct1 = v.total ? Math.round(v.l1 / v.total * 100) : 0;
+    const pct2 = v.total ? Math.round(v.l2 / v.total * 100) : 0;
+    deptHtml += `
+      <div class="dept-bar"><span class="dept-name">${esc(name)}</span>
+        <div class="bar-container"><div class="bar link1" style="width:${pct1}%">${pct1 ? pct1+'%' : ''}</div></div>
+        <span class="bar-pct">${v.l1}/${v.total}</span></div>
+      <div class="dept-bar"><span class="dept-name"></span>
+        <div class="bar-container"><div class="bar link2" style="width:${pct2}%">${pct2 ? pct2+'%' : ''}</div></div>
+        <span class="bar-pct">${v.l2}/${v.total}</span></div>`;
+  }
+  $('#dept-chart').innerHTML = deptHtml || '<p style="color:#aaa;text-align:center;padding:20px">데이터 없음</p>';
+
+  // 참가자 목록
+  $('#t-participants').innerHTML = p.map(pp => {
+    const cm = clickMap[pp.id] || {l1:0,l2:0};
+    return `<tr>
+      <td>${esc(pp.name)}</td><td>${esc(pp.email)}</td><td>${esc(pp.department)}</td>
+      <td><span class="badge-click ${cm.l1?'badge-yes':'badge-no'}">${cm.l1?'클릭('+cm.l1+')':'미클릭'}</span></td>
+      <td><span class="badge-click ${cm.l2?'badge-yes':'badge-no'}">${cm.l2?'클릭('+cm.l2+')':'미클릭'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="delP('${pp.id}')">삭제</button></td>
+    </tr>`;
+  }).join('');
+
+  renderLinks();
+
+  // 클릭 로그
+  const nameMap = {};
+  p.forEach(pp => { nameMap[pp.id] = pp; });
+  $('#t-logs').innerHTML = c.slice().reverse().map(cc => {
+    const pp = nameMap[cc.participantId] || {};
+    return `<tr>
+      <td style="white-space:nowrap">${cc.time ? new Date(cc.time).toLocaleString('ko-KR') : ''}</td>
+      <td>${esc(pp.name||'?')}</td><td>${esc(pp.email||'')}</td><td>${esc(pp.department||'')}</td>
+      <td><span class="badge-click badge-yes">링크${cc.linkNumber}</span></td>
+    </tr>`;
+  }).join('');
+
+  // 링크 설명 복원
+  const desc = JSON.parse(localStorage.getItem('pt_linkdesc') || '{}');
+  if (desc.l1) $('#f-link1-desc').value = desc.l1;
+  if (desc.l2) $('#f-link2-desc').value = desc.l2;
+}
+
+function renderLinks() {
+  const d = getData();
+  const base = ($('#f-base').value || '').replace(/\/+$/, '');
+  $('#t-links').innerHTML = d.participants.map(pp => {
+    const l1 = base ? base + '/link.html?l=1&t=' + pp.token : '(서버 주소를 입력하세요)';
+    const l2 = base ? base + '/link.html?l=2&t=' + pp.token : '(서버 주소를 입력하세요)';
+    return `<tr>
+      <td>${esc(pp.name)}</td><td>${esc(pp.department)}</td>
+      <td><span class="link-url">${esc(l1)}</span></td>
+      <td><span class="link-url">${esc(l2)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function copyAllLinks() {
+  const d = getData();
+  const base = ($('#f-base').value || '').replace(/\/+$/, '');
+  if (!base) return toast('서버 주소를 입력하세요');
+  const text = d.participants.map(p =>
+    `${p.name}\t${p.department}\t${base}/link.html?l=1&t=${p.token}\t${base}/link.html?l=2&t=${p.token}`
+  ).join('\n');
+  navigator.clipboard.writeText(text).then(() => toast('전체 링크 복사 완료'));
+}
+
+// ── CSV 내보내기 ──
+function exportCSV() {
+  const d = getData();
+  const c = d.clicks;
+  let csv = '﻿이름,이메일,부서,링크1_클릭수,링크1_최초클릭,링크2_클릭수,링크2_최초클릭\n';
+  d.participants.forEach(p => {
+    const l1clicks = c.filter(x => x.participantId === p.id && x.linkNumber === 1);
+    const l2clicks = c.filter(x => x.participantId === p.id && x.linkNumber === 2);
+    const l1first = l1clicks.length ? l1clicks.sort((a,b) => a.time.localeCompare(b.time))[0].time : '';
+    const l2first = l2clicks.length ? l2clicks.sort((a,b) => a.time.localeCompare(b.time))[0].time : '';
+    csv += `${p.name},${p.email},${p.department},${l1clicks.length},${l1first},${l2clicks.length},${l2first}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'training_result_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ── 전체 초기화 ──
+function clearAll() {
+  if (!confirm('모든 참가자와 클릭 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+  setData({participants:[], clicks:[]});
+  toast('전체 초기화 완료'); render();
+}
+
+// ── 백업/복원 ──
+function backupData() {
+  const data = { participants: getData(), linkDesc: JSON.parse(localStorage.getItem('pt_linkdesc') || '{}'), exportDate: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'training_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+function restoreData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.participants) setData(data.participants);
+      if (data.linkDesc) localStorage.setItem('pt_linkdesc', JSON.stringify(data.linkDesc));
+      toast('데이터 복원 완료'); render();
+    } catch { toast('파일 형식 오류'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function saveLinkDesc() {
+  localStorage.setItem('pt_linkdesc', JSON.stringify({
+    l1: $('#f-link1-desc').value.trim(),
+    l2: $('#f-link2-desc').value.trim()
+  }));
+  toast('저장 완료');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+// ── 외부에서 클릭 기록 수신 (link.html → admin.html) ──
+window.addEventListener('storage', function(e) {
+  if (e.key === 'pt_data') render();
+});
+
+render();
+</script>
+</body>
+</html>
